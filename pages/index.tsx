@@ -1,8 +1,4 @@
 import type {NextPage} from 'next';
-import {parse} from 'date-fns';
-import Head from 'next/head';
-import Image from 'next/image';
-import styles from '../styles/Home.module.css';
 import {
   LineChart,
   Line,
@@ -17,22 +13,22 @@ import {CompactTable} from '@table-library/react-table-library/compact';
 import {useSort} from '@table-library/react-table-library/sort';
 
 const COLUMNS = [
-  {label: 'Timestamp', renderCell: (item) => item.createdOn},
+  {label: 'Timestamp', renderCell: (item: any) => item.createdOn},
   {
     label: 'Gravity',
-    renderCell: (item) => item.gravity,
+    renderCell: (item: any) => item.gravity,
   },
   {
     label: 'Temperature',
-    renderCell: (item) => item.temperature,
+    renderCell: (item: any) => item.temperature,
   },
   {
     label: 'Battery',
-    renderCell: (item) => item.battery,
+    renderCell: (item: any) => item.battery,
   },
   {
     label: 'Signal',
-    renderCell: (item) => item.rssi,
+    renderCell: (item: any) => item.rssi,
   },
 ];
 
