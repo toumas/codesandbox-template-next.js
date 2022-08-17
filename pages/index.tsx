@@ -13,7 +13,10 @@ import {CompactTable} from '@table-library/react-table-library/compact';
 import {useSort} from '@table-library/react-table-library/sort';
 
 const COLUMNS = [
-  {label: 'Timestamp', renderCell: (item: any) => item.createdOn},
+  {
+    label: 'Timestamp',
+    renderCell: (item: any) => new Date(item.createdOn).toLocaleString(),
+  },
   {
     label: 'Gravity',
     renderCell: (item: any) => item.gravity,
@@ -50,13 +53,18 @@ const Home: NextPage = (props: any) => {
     },
   );
 
+  const formattedData = filteredData.map((item: any) => ({
+    ...item,
+    createdOn: new Date(item.createdOn).toLocaleString(),
+  }));
+
   return (
     <>
       <ResponsiveContainer width="100%" height={500}>
         <LineChart
           width={500}
           height={300}
-          data={filteredData}
+          data={formattedData}
           margin={{
             top: 5,
             right: 30,
@@ -66,11 +74,29 @@ const Home: NextPage = (props: any) => {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="createdOn" />
-          <YAxis domain={['minData', 'maxData']} />
+          <XAxis dataKey="name" />
+          <YAxis yAxisId="left" />
+          <YAxis
+            yAxisId="right"
+            orientation="right"
+            domain={['minData', 'maxData']}
+          />
           <Tooltip />
           <Legend />
-          {/* <Line type="monotone" dataKey="temperature" stroke="#8884d8" activeDot={{ r: 8 }} /> */}
-          <Line type="monotone" dataKey="gravity" stroke="#82ca9d" />
+          <Line
+            yAxisId="left"
+            type="monotone"
+            dataKey="temperature"
+            stroke="#8884d8"
+            dot={false}
+          />
+          <Line
+            yAxisId="right"
+            type="monotone"
+            dataKey="gravity"
+            stroke="#82ca9d"
+            dot={false}
+          />
         </LineChart>
       </ResponsiveContainer>
       <CompactTable sort={sort} columns={COLUMNS} data={{nodes: props.data}} />
