@@ -1,6 +1,6 @@
 import styles from '../styles/Home.module.css';
 import type {NextPage} from 'next';
-import {useEffect, useState} from 'react';
+import {useEffect, useState, useRef} from 'react';
 import useSWR from 'swr';
 import {
   LineChart,
@@ -83,7 +83,7 @@ const Home: NextPage<HomeProps> = (props) => {
       },
     },
   );
-  const firstTelemetryDate = data[0].createdOn;
+  const firstTelemetryDate = useRef<Date>(data[0].createdOn);
   const lastTelemetryDate = data[data.length - 1].createdOn;
   const formattedData = filteredData.map((item: any) => ({
     ...item,
@@ -91,7 +91,7 @@ const Home: NextPage<HomeProps> = (props) => {
   }));
   const [locale, setLocale] = useState<string>();
   const [startDate, setStartDate] = useState<Date | undefined>(
-    new Date(firstTelemetryDate),
+    new Date(firstTelemetryDate.current),
   );
   const [endDate, setEndDate] = useState<Date | undefined>(
     new Date(lastTelemetryDate),
@@ -117,6 +117,7 @@ const Home: NextPage<HomeProps> = (props) => {
       onSuccess(data) {
         setFallbackData(data);
       },
+      revalidateOnFocus: false,
     },
   );
   const isLoading = !error && !fetchedData;
@@ -145,7 +146,7 @@ const Home: NextPage<HomeProps> = (props) => {
         <DatePicker
           selected={startDate}
           showTimeSelect={true}
-          minDate={startDate}
+          minDate={new Date(firstTelemetryDate.current)}
           locale={locale}
           dateFormat="Pp"
           onChange={(date: Date) => {
@@ -239,6 +240,7 @@ export async function getStaticProps() {
     },
   );
   const telemetryData = (await telemetryRes.json()) as Telemetry[];
+  console.log("getStaticProps")
   return {
     revalidate: 1,
     props: {
