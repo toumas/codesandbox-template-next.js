@@ -1,4 +1,7 @@
+import styles from '../styles/Home.module.css';
 import type {NextPage} from 'next';
+import {useEffect, useState, useRef} from 'react';
+import useSWR from 'swr';
 import {
   LineChart,
   Line,
@@ -11,34 +14,62 @@ import {
 } from 'recharts';
 import {CompactTable} from '@table-library/react-table-library/compact';
 import {useSort} from '@table-library/react-table-library/sort';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import {TableNode} from '@table-library/react-table-library';
+
+export interface Telemetry {
+  temperature: number;
+  gravity: number;
+  battery: number;
+  version: string;
+  createdOn: Date;
+  macAddress: string;
+  rssi: number;
+}
+
+const fetcher = (url: string, options: RequestInit) =>
+  fetch(url, options).then((res) => res.json());
 
 const COLUMNS = [
   {
     label: 'Timestamp',
-    renderCell: (item: any) => new Date(item.createdOn).toLocaleString(),
+    renderCell: (item: TableNode) => new Date(item.createdOn).toLocaleString(),
   },
   {
     label: 'Gravity',
-    renderCell: (item: any) => item.gravity,
+    renderCell: (item: TableNode) => item.gravity,
   },
   {
     label: 'Temperature',
-    renderCell: (item: any) => item.temperature,
+    renderCell: (item: TableNode) => item.temperature,
   },
   {
     label: 'Battery',
-    renderCell: (item: any) => item.battery,
+    renderCell: (item: TableNode) => item.battery,
   },
   {
     label: 'Signal',
-    renderCell: (item: any) => item.rssi,
+    renderCell: (item: TableNode) => item.rssi,
   },
 ];
 
-const Home: NextPage = (props: any) => {
-  const filteredData = props.data.filter((item: any) => item.gravity < 1140);
+interface HomeProps {
+  access_token: string;
+  hydrometerId: string;
+  startDate: string;
+  data: Telemetry[];
+}
+
+const Home: NextPage<HomeProps> = (props) => {
+  const [data, setData] = useState(props.data);
+  const filteredData = data.filter((item: Telemetry) => item.gravity < 1140);
+  const nodes = filteredData.map((item) => ({
+    ...item,
+    id: item.createdOn.toString(),
+  }));
   const sort = useSort(
-    filteredData,
+    {nodes},
     {
       state: {
         sortKey: 'Timestamp',
@@ -52,26 +83,92 @@ const Home: NextPage = (props: any) => {
       },
     },
   );
-
+  const firstTelemetryDate = useRef<Date>(data[0].createdOn);
+  const lastTelemetryDate = data[data.length - 1].createdOn;
   const formattedData = filteredData.map((item: any) => ({
     ...item,
     createdOn: new Date(item.createdOn).toLocaleString(),
   }));
+  const [locale, setLocale] = useState<string>();
+  const [startDate, setStartDate] = useState<Date | undefined>(
+    new Date(firstTelemetryDate.current),
+  );
+  const [endDate, setEndDate] = useState<Date | undefined>(
+    new Date(lastTelemetryDate),
+  );
+  const [isDatePickersDirty, setIsDatePickerDirty] = useState(false);
+
+  const [fallbackData, setFallbackData] = useState(formattedData);
+  const {data: fetchedData, error} = useSWR<Telemetry[]>(
+    () =>
+      isDatePickersDirty &&
+      props.access_token &&
+      props.hydrometerId &&
+      startDate &&
+      endDate && [
+        `/api/getTelemetryByRange?hydrometerId=${
+          props.hydrometerId
+        }&startDate=${startDate.toJSON()}&endDate=${endDate.toJSON()}&token=${
+          props.access_token
+        }`,
+      ],
+    fetcher,
+    {
+      onSuccess(data) {
+        setFallbackData(data);
+      },
+      revalidateOnFocus: false,
+    },
+  );
+  const isLoading = !error && !fetchedData;
+
+  useEffect(() => {
+    if (Array.isArray(fetchedData) && fetchedData.length > 0) {
+      setData(fetchedData);
+    }
+  }, [fetchedData]);
+
+  let dataToShow;
+  if (isLoading || error) {
+    dataToShow = fallbackData;
+  } else if (fetchedData) {
+    dataToShow = fetchedData;
+  }
+
+  useEffect(() => {
+    setLocale(navigator.language.substring(0, 2));
+  }, []);
 
   return (
     <>
-      <ResponsiveContainer width="100%" height={500}>
-        <LineChart
-          width={500}
-          height={300}
-          data={formattedData}
-          margin={{
-            top: 5,
-            right: 30,
-            left: 20,
-            bottom: 5,
+      <div className={styles.row}>
+        <span>From:</span>
+        <DatePicker
+          selected={startDate}
+          showTimeSelect={true}
+          minDate={new Date(firstTelemetryDate.current)}
+          locale={locale}
+          dateFormat="Pp"
+          onChange={(date: Date) => {
+            setIsDatePickerDirty(true);
+            setStartDate(date);
           }}
-        >
+        />
+        <span>To:</span>
+        <DatePicker
+          selected={endDate}
+          showTimeSelect={true}
+          maxDate={new Date()}
+          locale={locale}
+          dateFormat="Pp"
+          onChange={(date: Date) => {
+            setIsDatePickerDirty(true);
+            setEndDate(date);
+          }}
+        />
+      </div>
+      <ResponsiveContainer width="100%" height={500}>
+        <LineChart width={500} height={300} data={dataToShow}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="createdOn" />
           <XAxis dataKey="name" />
@@ -99,7 +196,7 @@ const Home: NextPage = (props: any) => {
           />
         </LineChart>
       </ResponsiveContainer>
-      <CompactTable sort={sort} columns={COLUMNS} data={{nodes: props.data}} />
+      <CompactTable sort={sort} columns={COLUMNS} data={{nodes}} />
     </>
   );
 };
@@ -142,6 +239,15 @@ export async function getStaticProps() {
       },
     },
   );
-  const telemetryData = await telemetryRes.json();
-  return {revalidate: 1, props: {data: telemetryData}};
+  const telemetryData = (await telemetryRes.json()) as Telemetry[];
+  console.log("getStaticProps")
+  return {
+    revalidate: 1,
+    props: {
+      access_token,
+      hydrometerId,
+      startDate: formattedStartDate,
+      data: telemetryData,
+    },
+  };
 }
