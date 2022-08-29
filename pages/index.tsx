@@ -158,31 +158,37 @@ const Home: NextPage<HomeProps> = (props) => {
 
   return (
     <>
-      <div className={styles.row}>
-        <span>From:</span>
-        <DatePicker
-          selected={startDate}
-          showTimeSelect={true}
-          minDate={new Date(firstTelemetryDate.current)}
-          locale={locale}
-          dateFormat="Pp"
-          onChange={(date: Date) => {
-            setIsDatePickerDirty(true);
-            setStartDate(date);
-          }}
-        />
-        <span>To:</span>
-        <DatePicker
-          selected={endDate}
-          showTimeSelect={true}
-          maxDate={new Date()}
-          locale={locale}
-          dateFormat="Pp"
-          onChange={(date: Date) => {
-            setIsDatePickerDirty(true);
-            setEndDate(date);
-          }}
-        />
+      <div className={styles.header}>
+        <div className={styles.wrapper}>
+            <span>From:</span>
+            <DatePicker
+            className={styles.inline}
+            selected={startDate}
+            showTimeSelect={true}
+            minDate={new Date(firstTelemetryDate.current)}
+            locale={locale}
+            dateFormat="Pp"
+            onChange={(date: Date) => {
+                setIsDatePickerDirty(true);
+                setStartDate(date);
+            }}
+            />
+        </div>
+        <div className={styles.wrapper}>
+            <span>To:</span>
+            <DatePicker
+            className={styles.inline}
+            selected={endDate}
+            showTimeSelect={true}
+            maxDate={new Date()}
+            locale={locale}
+            dateFormat="Pp"
+            onChange={(date: Date) => {
+                setIsDatePickerDirty(true);
+                setEndDate(date);
+            }}
+            />
+        </div>
       </div>
       <ResponsiveContainer width="100%" height={500}>
         <LineChart width={500} height={300} data={dataToShow}>
