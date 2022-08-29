@@ -28,8 +28,14 @@ export interface Telemetry {
   rssi: number;
 }
 
-const fetcher = (url: string, options: RequestInit) =>
-  fetch(url, options).then((res) => res.json());
+const fetcher = async (url: string, options: RequestInit) => {
+  try {
+    const res = await fetch(url, options);
+    return await res.json();
+  } catch (error) {
+    console.error(error);
+  }
+};
 
 const COLUMNS = [
   {
@@ -53,6 +59,8 @@ const COLUMNS = [
     renderCell: (item: TableNode) => item.rssi,
   },
 ];
+
+type FetchedData = Telemetry[] | {message: string};
 
 interface HomeProps {
   access_token: string;
@@ -99,7 +107,7 @@ const Home: NextPage<HomeProps> = (props) => {
   const [isDatePickersDirty, setIsDatePickerDirty] = useState(false);
 
   const [fallbackData, setFallbackData] = useState(formattedData);
-  const {data: fetchedData, error} = useSWR<Telemetry[]>(
+  const {data: fetchedData, error} = useSWR<FetchedData>(
     () =>
       isDatePickersDirty &&
       props.access_token &&
@@ -115,7 +123,9 @@ const Home: NextPage<HomeProps> = (props) => {
     fetcher,
     {
       onSuccess(data) {
-        setFallbackData(data);
+        if (Array.isArray(data) && data.length > 0) {
+          setFallbackData(data);
+        }
       },
       revalidateOnFocus: false,
     },
@@ -123,21 +133,28 @@ const Home: NextPage<HomeProps> = (props) => {
   const isLoading = !error && !fetchedData;
 
   useEffect(() => {
+    if (!Array.isArray(fetchedData) && fetchedData?.message) {
+      alert(fetchedData?.message);
+    }
     if (Array.isArray(fetchedData) && fetchedData.length > 0) {
       setData(fetchedData);
     }
   }, [fetchedData]);
 
-  let dataToShow;
-  if (isLoading || error) {
-    dataToShow = fallbackData;
-  } else if (fetchedData) {
-    dataToShow = fetchedData;
-  }
-
   useEffect(() => {
     setLocale(navigator.language.substring(0, 2));
   }, []);
+  
+  let dataToShow: Telemetry[] | undefined = undefined;
+  if (
+    isLoading ||
+    error ||
+    (!Array.isArray(fetchedData) && fetchedData?.message)
+  ) {
+    dataToShow = fallbackData;
+  } else if (Array.isArray(fetchedData)) {
+    dataToShow = fetchedData;
+  }
 
   return (
     <>
@@ -240,7 +257,7 @@ export async function getStaticProps() {
     },
   );
   const telemetryData = (await telemetryRes.json()) as Telemetry[];
-  console.log("getStaticProps")
+  console.log('getStaticProps');
   return {
     revalidate: 1,
     props: {
