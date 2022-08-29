@@ -1,4 +1,14 @@
 .row {
   display: flex;
   gap: 1rem;
+  flex-wrap: wrap;
+}
+.header {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+.wrapper {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
 }
