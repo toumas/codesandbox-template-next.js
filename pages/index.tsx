@@ -1,7 +1,7 @@
-import styles from '../styles/Home.module.css';
-import type {NextPage} from 'next';
-import {useEffect, useState, useRef} from 'react';
-import useSWR from 'swr';
+import styles from "../styles/Home.module.css";
+import type {NextPage} from "next";
+import {useEffect, useState, useRef} from "react";
+import useSWR from "swr";
 import {
   LineChart,
   Line,
@@ -11,12 +11,12 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
-} from 'recharts';
-import {CompactTable} from '@table-library/react-table-library/compact';
-import {useSort} from '@table-library/react-table-library/sort';
-import DatePicker from 'react-datepicker';
-import 'react-datepicker/dist/react-datepicker.css';
-import {TableNode} from '@table-library/react-table-library';
+} from "recharts";
+import {CompactTable} from "@table-library/react-table-library/compact";
+import {useSort} from "@table-library/react-table-library/sort";
+import DatePicker from "react-datepicker";
+import "react-datepicker/dist/react-datepicker.css";
+import {TableNode} from "@table-library/react-table-library";
 
 export interface Telemetry {
   temperature: number;
@@ -39,23 +39,23 @@ const fetcher = async (url: string, options: RequestInit) => {
 
 const COLUMNS = [
   {
-    label: 'Timestamp',
+    label: "Timestamp",
     renderCell: (item: TableNode) => new Date(item.createdOn).toLocaleString(),
   },
   {
-    label: 'Gravity',
+    label: "Gravity",
     renderCell: (item: TableNode) => item.gravity,
   },
   {
-    label: 'Temperature',
+    label: "Temperature",
     renderCell: (item: TableNode) => item.temperature,
   },
   {
-    label: 'Battery',
+    label: "Battery",
     renderCell: (item: TableNode) => item.battery,
   },
   {
-    label: 'Signal',
+    label: "Signal",
     renderCell: (item: TableNode) => item.rssi,
   },
 ];
@@ -80,7 +80,7 @@ const Home: NextPage<HomeProps> = (props) => {
     {nodes},
     {
       state: {
-        sortKey: 'Timestamp',
+        sortKey: "Timestamp",
         reverse: true,
       },
     },
@@ -144,7 +144,7 @@ const Home: NextPage<HomeProps> = (props) => {
   useEffect(() => {
     setLocale(navigator.language.substring(0, 2));
   }, []);
-  
+
   let dataToShow: Telemetry[] | undefined = undefined;
   if (
     isLoading ||
@@ -160,8 +160,8 @@ const Home: NextPage<HomeProps> = (props) => {
     <>
       <div className={styles.header}>
         <div className={styles.wrapper}>
-            <span>From:</span>
-            <DatePicker
+          <span>From:</span>
+          <DatePicker
             className={styles.inline}
             selected={startDate}
             showTimeSelect={true}
@@ -169,14 +169,14 @@ const Home: NextPage<HomeProps> = (props) => {
             locale={locale}
             dateFormat="Pp"
             onChange={(date: Date) => {
-                setIsDatePickerDirty(true);
-                setStartDate(date);
+              setIsDatePickerDirty(true);
+              setStartDate(date);
             }}
-            />
+          />
         </div>
         <div className={styles.wrapper}>
-            <span>To:</span>
-            <DatePicker
+          <span>To:</span>
+          <DatePicker
             className={styles.inline}
             selected={endDate}
             showTimeSelect={true}
@@ -184,10 +184,10 @@ const Home: NextPage<HomeProps> = (props) => {
             locale={locale}
             dateFormat="Pp"
             onChange={(date: Date) => {
-                setIsDatePickerDirty(true);
-                setEndDate(date);
+              setIsDatePickerDirty(true);
+              setEndDate(date);
             }}
-            />
+          />
         </div>
       </div>
       <ResponsiveContainer width="100%" height={500}>
@@ -199,7 +199,7 @@ const Home: NextPage<HomeProps> = (props) => {
           <YAxis
             yAxisId="right"
             orientation="right"
-            domain={['minData', 'maxData']}
+            domain={["minData", "maxData"]}
           />
           <Tooltip />
           <Legend />
@@ -227,43 +227,43 @@ const Home: NextPage<HomeProps> = (props) => {
 export default Home;
 
 export async function getStaticProps() {
-  const res = await fetch('https://id.rapt.io/connect/token', {
-    method: 'POST',
+  const res = await fetch("https://id.rapt.io/connect/token", {
+    method: "POST",
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      "Content-Type": "application/x-www-form-urlencoded",
     },
     body: new URLSearchParams({
-      client_id: 'rapt-user',
-      grant_type: 'password',
-      username: 'rapt@tuoto.xyz',
+      client_id: "rapt-user",
+      grant_type: "password",
+      username: "rapt@tuoto.xyz",
       password: process.env.RAPT_PORTAL_SECRET as string,
     }),
   });
   const {access_token} = await res.json();
   const hydrometersRes = await fetch(
-    'https://api.rapt.io/api/Hydrometers/GetHydrometers',
+    "https://api.rapt.io/api/Hydrometers/GetHydrometers",
     {
       headers: {
         Authorization: `Bearer ${access_token}`,
-        accept: 'application/json',
+        accept: "application/json",
       },
     },
   );
   const {
     activeProfileSession: {hydrometerId, startDate},
   } = (await hydrometersRes.json())[0];
-  const formattedStartDate = startDate.slice(0, -6) + 'Z';
+  const formattedStartDate = startDate.slice(0, -6) + "Z";
   const telemetryRes = await fetch(
     `https://api.rapt.io/api/Hydrometers/GetTelemetry?hydrometerId=${hydrometerId}&startDate=${formattedStartDate}&endDate=${new Date().toJSON()}`,
     {
       headers: {
         Authorization: `Bearer ${access_token}`,
-        accept: 'application/json',
+        accept: "application/json",
       },
     },
   );
   const telemetryData = (await telemetryRes.json()) as Telemetry[];
-  console.log('getStaticProps');
+  console.log("getStaticProps");
   return {
     revalidate: 1,
     props: {
