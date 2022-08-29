@@ -13,7 +13,6 @@ export default async function handler(
         },
       },
     );
-    console.log(telemetryRes)
     if (telemetryRes.status === 429) {
         res.status(telemetryRes.status).json({message: "API limit reached, try again in 5 minutes"})
     }
